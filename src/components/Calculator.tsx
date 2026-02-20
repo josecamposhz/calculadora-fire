@@ -8,10 +8,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Line,
 } from 'recharts';
 import { SliderField } from './SliderField';
 import { StatCard } from './StatCard';
-import { fmtCompact, fmtFull } from '../helpers';
+import { fmtCompact, fmtFull, passiveIncomeGoalForYear } from '../helpers';
 import { CustomTooltip } from './CustomTooltip';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -22,6 +23,8 @@ interface Params {
   dividendos: number;
   anos: number;
   reinvertir: boolean;
+  metaIngreso: number;
+  inflacion: number;
 }
 
 interface YearRow {
@@ -33,6 +36,8 @@ interface YearRow {
   divAno?: number;
   valorTotal: number;
   roiPct: number;
+  metaIngresoAnual: number;
+  coberturaMetaPct: number;
 }
 
 // ─── Calculator Logic ─────────────────────────────────────────────────────────
@@ -51,6 +56,8 @@ function calculate(p: Params): YearRow[] {
     dividendosAcum: 0,
     valorTotal: p.inicial,
     roiPct: 0,
+    metaIngresoAnual: passiveIncomeGoalForYear(p.metaIngreso, p.inflacion, 0),
+    coberturaMetaPct: 0,
   });
 
   let valor = p.inicial;
@@ -83,6 +90,13 @@ function calculate(p: Params): YearRow[] {
     const valorTotal = p.reinvertir ? valor : valor + totalDividendos * 0; // dividends cashed out
     const ganancia = valorTotal - capitalAportado;
     const roiPct = capitalAportado > 0 ? (ganancia / capitalAportado) * 100 : 0;
+    const metaIngresoAnual = passiveIncomeGoalForYear(
+      p.metaIngreso,
+      p.inflacion,
+      y
+    );
+    const coberturaMetaPct =
+      metaIngresoAnual > 0 ? (divAno / metaIngresoAnual) * 100 : 0;
 
     rows.push({
       ano: y,
@@ -93,6 +107,8 @@ function calculate(p: Params): YearRow[] {
       divAno,
       valorTotal,
       roiPct,
+      metaIngresoAnual,
+      coberturaMetaPct,
     });
   }
 
@@ -108,6 +124,8 @@ export default function Calculator() {
     dividendos: 3,
     anos: 20,
     reinvertir: true,
+    metaIngreso: 6000,
+    inflacion: 3,
   });
 
   const set = useCallback(<K extends keyof Params>(key: K, val: Params[K]) => {
@@ -122,9 +140,11 @@ export default function Calculator() {
   const roi =
     capitalTotal > 0 ? ((ganancias / capitalTotal) * 100).toFixed(1) : '0.0';
   const divTotales = last.dividendosAcum;
+  const metaIngresoFinal = last.metaIngresoAnual;
+  const coberturaMeta = last.coberturaMetaPct.toFixed(1);
 
   return (
-    <div className="max-w-[1100px] mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-6 py-12">
       {/* Header */}
       <header className="text-center mb-14 animate-fade-up">
         <p className="text-[11px] tracking-[0.35em] uppercase text-gold mb-4">
@@ -139,7 +159,7 @@ export default function Calculator() {
       </header>
 
       {/* Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
         {/* ── Inputs Panel ── */}
         <div
           className="bg-surface border border-border rounded-sm p-8 animate-fade-up"
@@ -265,6 +285,45 @@ export default function Calculator() {
               />
             </div>
           </label>
+
+          <div className="h-px bg-border my-6" />
+          <p className="text-[10px] tracking-[0.25em] uppercase text-gold mb-4">
+            Meta de Ingreso Pasivo
+          </p>
+
+          <div className="mb-5">
+            <label
+              htmlFor="metaIngreso"
+              className="block text-[10px] tracking-[0.2em] uppercase text-muted mb-2"
+            >
+              Meta Anual
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold text-sm pointer-events-none">
+                $
+              </span>
+              <input
+                id="metaIngreso"
+                type="number"
+                value={params.metaIngreso}
+                min={0}
+                step={100}
+                onChange={(e) => set('metaIngreso', Number(e.target.value))}
+                className="w-full bg-surface2 border border-border rounded-sm py-3 pl-8 pr-3 text-ink font-mono text-sm outline-none focus:border-gold transition-colors"
+              />
+            </div>
+          </div>
+
+          <SliderField
+            label="Inflación Anual"
+            id="inflacion"
+            value={params.inflacion}
+            onChange={(v) => set('inflacion', v)}
+            min={2}
+            max={5}
+            step={0.1}
+            suffix="%"
+          />
         </div>
 
         {/* ── Results ── */}
@@ -305,6 +364,18 @@ export default function Calculator() {
                   : 'recibidos en efectivo'
               }
               accent={params.reinvertir ? 'emerald' : 'default'}
+            />
+            <StatCard
+              label="Meta Ingreso Pasivo"
+              value={fmtFull(metaIngresoFinal)}
+              sub={`inflación ${params.inflacion}%`}
+              accent="default"
+            />
+            <StatCard
+              label="Cobertura de Meta"
+              value={`${coberturaMeta}%`}
+              sub="dividendos del último año"
+              accent={Number(coberturaMeta) >= 100 ? 'emerald' : 'default'}
             />
           </div>
 
@@ -413,6 +484,15 @@ export default function Calculator() {
                     strokeWidth: 2,
                   }}
                 />
+                <Line
+                  type="monotone"
+                  dataKey="metaIngresoAnual"
+                  name="Meta Ingreso Anual"
+                  stroke="#e5c76b"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  dot={false}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -434,6 +514,8 @@ export default function Calculator() {
                       'Intereses Acum.',
                       'Dividendos Acum.',
                       'Dividendos Año',
+                      'Meta Ingreso',
+                      'Cobertura Meta',
                       'Valor Total',
                       'ROI',
                     ].map((h, i) => (
@@ -466,6 +548,12 @@ export default function Calculator() {
                       </td>
                       <td className="px-4 py-2.5 text-right text-emerald">
                         {fmtFull(row.divAno || 0)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gold">
+                        {fmtFull(row.metaIngresoAnual)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-muted">
+                        {row.coberturaMetaPct.toFixed(1)}%
                       </td>
                       <td className="px-4 py-2.5 text-right text-gold font-medium">
                         {fmtFull(row.valorTotal)}

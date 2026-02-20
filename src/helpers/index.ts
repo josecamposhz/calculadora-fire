@@ -14,3 +14,5 @@ export function fmtFull(n: number) {
     })
   );
 }
+
+export { passiveIncomeGoalForYear } from './passiveIncomeGoal';
