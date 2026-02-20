@@ -110,7 +110,7 @@ function calculate(p: Params): YearRow[] {
     const metaIngresoAnual = passiveIncomeGoalForYear(
       p.metaIngreso,
       p.inflacion,
-      y
+      y,
     );
     const coberturaMetaPct =
       metaIngresoAnual > 0 ? (divAno / metaIngresoAnual) * 100 : 0;
@@ -533,7 +533,7 @@ export default function Calculator() {
                 Detalle Anual
               </p>
             </div>
-            <div className="overflow-x-auto max-h-72 overflow-y-auto">
+            <div className="overflow-auto max-h-72">
               <table className="w-full text-xs">
                 <thead>
                   <tr>
