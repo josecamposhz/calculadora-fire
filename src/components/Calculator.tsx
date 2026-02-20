@@ -561,7 +561,7 @@ export default function Calculator() {
                   {rows.map((row) => (
                     <tr
                       key={row.ano}
-                      className={`border-b border-border/50 hover:bg-surface2 transition-colors first:opacity-60`}
+                      className={`border-b border-border/50 hover:bg-surface2 transition-colors first:opacity-60 ${row.coberturaMetaPct >= 100 ? 'bg-emerald/10' : ''}`}
                     >
                       <td className="px-4 py-2.5 text-muted text-left font-mono">
                         {row.ano}
