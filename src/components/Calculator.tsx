@@ -575,6 +575,21 @@ export default function Calculator() {
                     strokeWidth: 2,
                   }}
                 />
+                <Area
+                  type="monotone"
+                  dataKey="dividendosAcum"
+                  name="Dividendos Acum."
+                  stroke="#4caf90"
+                  strokeWidth={2}
+                  fill="url(#gradEmerald)"
+                  dot={false}
+                  activeDot={{
+                    r: 4,
+                    fill: '#4caf90',
+                    stroke: '#0a0c0f',
+                    strokeWidth: 2,
+                  }}
+                />
                 <Line
                   type="monotone"
                   dataKey="yearGoalAnual"
