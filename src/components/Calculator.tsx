@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -134,17 +134,54 @@ function calculate(p: Params): YearRow[] {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Calculator() {
-  const [params, setParams] = useState<Params>({
-    inicial: 10000,
-    mensual: 500,
-    tasa: 8,
-    dividendos: 3,
-    crecimientoDividendos: 5,
-    anos: 20,
-    reinvertir: true,
-    metaIngreso: 15_000,
-    inflacion: 3,
+  const [params, setParams] = useState<Params>(() => {
+    if (typeof window === 'undefined') {
+      return {
+        inicial: 10000,
+        mensual: 500,
+        tasa: 8,
+        dividendos: 3,
+        crecimientoDividendos: 5,
+        anos: 20,
+        reinvertir: true,
+        metaIngreso: 15_000,
+        inflacion: 3,
+      };
+    }
+    const stored = localStorage.getItem('calculadora-fire-params');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return {
+          inicial: 10000,
+          mensual: 500,
+          tasa: 8,
+          dividendos: 3,
+          crecimientoDividendos: 5,
+          anos: 20,
+          reinvertir: true,
+          metaIngreso: 15_000,
+          inflacion: 3,
+        };
+      }
+    }
+    return {
+      inicial: 10000,
+      mensual: 500,
+      tasa: 8,
+      dividendos: 3,
+      crecimientoDividendos: 5,
+      anos: 20,
+      reinvertir: true,
+      metaIngreso: 15_000,
+      inflacion: 3,
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('calculadora-fire-params', JSON.stringify(params));
+  }, [params]);
 
   const set = useCallback(<K extends keyof Params>(key: K, val: Params[K]) => {
     setParams((prev) => ({ ...prev, [key]: val }));
