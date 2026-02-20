@@ -20,12 +20,12 @@ interface Params {
   inicial: number;
   mensual: number;
   tasa: number;
-  dividendos: number;
-  crecimientoDividendos: number;
-  anos: number;
-  reinvertir: boolean;
-  metaIngreso: number;
-  inflacion: number;
+  annualDividendYield: number;
+  dividendGrowthRate: number;
+  years: number;
+  reinvest: boolean;
+  yearGoal: number;
+  inflation: number;
 }
 
 interface YearRow {
@@ -37,15 +37,15 @@ interface YearRow {
   divAno?: number;
   valorTotal: number;
   roiPct: number;
-  metaIngresoAnual: number;
+  yearGoalAnual: number;
   coberturaMetaPct: number;
 }
 
 // ─── Calculator Logic ─────────────────────────────────────────────────────────
 function calculate(p: Params): YearRow[] {
   const tasaMensual = p.tasa / 100 / 12;
-  const divMensual = p.dividendos / 100 / 12;
-  const crecimientoDiv = p.crecimientoDividendos / 100;
+  const divMensual = p.annualDividendYield / 100 / 12;
+  const crecimientoDiv = p.dividendGrowthRate / 100;
 
   const rows: YearRow[] = [];
 
@@ -58,7 +58,7 @@ function calculate(p: Params): YearRow[] {
     dividendosAcum: 0,
     valorTotal: p.inicial,
     roiPct: 0,
-    metaIngresoAnual: passiveIncomeGoalForYear(p.metaIngreso, p.inflacion, 0),
+    yearGoalAnual: passiveIncomeGoalForYear(p.yearGoal, p.inflation, 0),
     coberturaMetaPct: 0,
   });
 
@@ -71,7 +71,7 @@ function calculate(p: Params): YearRow[] {
   let totalIntereses = 0;
   let totalDividendos = 0;
 
-  for (let y = 1; y <= p.anos; y++) {
+  for (let y = 1; y <= p.years; y++) {
     let interesAno = 0;
     let divAno = 0;
 
@@ -90,7 +90,7 @@ function calculate(p: Params): YearRow[] {
         const div = cohort.balance * divRate;
         divAno += div;
 
-        if (p.reinvertir) {
+        if (p.reinvest) {
           cohort.balance += div;
         }
 
@@ -104,16 +104,16 @@ function calculate(p: Params): YearRow[] {
     totalDividendos += divAno;
 
     const capitalAportado = p.inicial + p.mensual * 12 * y;
-    const valorTotal = p.reinvertir ? valor : valor + totalDividendos * 0; // dividends cashed out
+    const valorTotal = p.reinvest ? valor : valor + totalDividendos * 0; // dividends cashed out
     const ganancia = valorTotal - capitalAportado;
     const roiPct = capitalAportado > 0 ? (ganancia / capitalAportado) * 100 : 0;
-    const metaIngresoAnual = passiveIncomeGoalForYear(
-      p.metaIngreso,
-      p.inflacion,
+    const yearGoalAnual = passiveIncomeGoalForYear(
+      p.yearGoal,
+      p.inflation,
       y,
     );
     const coberturaMetaPct =
-      metaIngresoAnual > 0 ? (divAno / metaIngresoAnual) * 100 : 0;
+      yearGoalAnual > 0 ? (divAno / yearGoalAnual) * 100 : 0;
 
     rows.push({
       ano: y,
@@ -124,7 +124,7 @@ function calculate(p: Params): YearRow[] {
       divAno,
       valorTotal,
       roiPct,
-      metaIngresoAnual,
+      yearGoalAnual,
       coberturaMetaPct,
     });
   }
@@ -140,12 +140,12 @@ export default function Calculator() {
         inicial: 10000,
         mensual: 500,
         tasa: 8,
-        dividendos: 3,
-        crecimientoDividendos: 5,
-        anos: 20,
-        reinvertir: true,
-        metaIngreso: 15_000,
-        inflacion: 3,
+        annualDividendYield: 3,
+        dividendGrowthRate: 5,
+        years: 20,
+        reinvest: true,
+        yearGoal: 15_000,
+        inflation: 3,
       };
     }
     const stored = localStorage.getItem('calculadora-fire-params');
@@ -157,12 +157,12 @@ export default function Calculator() {
           inicial: 10000,
           mensual: 500,
           tasa: 8,
-          dividendos: 3,
-          crecimientoDividendos: 5,
-          anos: 20,
-          reinvertir: true,
-          metaIngreso: 15_000,
-          inflacion: 3,
+          annualDividendYield: 3,
+          dividendGrowthRate: 5,
+          years: 20,
+          reinvest: true,
+          yearGoal: 15_000,
+          inflation: 3,
         };
       }
     }
@@ -170,12 +170,12 @@ export default function Calculator() {
       inicial: 10000,
       mensual: 500,
       tasa: 8,
-      dividendos: 3,
-      crecimientoDividendos: 5,
-      anos: 20,
-      reinvertir: true,
-      metaIngreso: 15_000,
-      inflacion: 3,
+      annualDividendYield: 3,
+      dividendGrowthRate: 5,
+      years: 20,
+      reinvest: true,
+      yearGoal: 15_000,
+      inflation: 3,
     };
   });
 
@@ -195,7 +195,7 @@ export default function Calculator() {
   const roi =
     capitalTotal > 0 ? ((ganancias / capitalTotal) * 100).toFixed(1) : '0.0';
   const divTotales = last.dividendosAcum;
-  const metaIngresoFinal = last.metaIngresoAnual;
+  const yearGoalFinal = last.yearGoalAnual;
   const coberturaMeta = last.coberturaMetaPct.toFixed(1);
 
   return (
@@ -293,9 +293,9 @@ export default function Calculator() {
 
           <SliderField
             label="Tasa de Dividendos Anual"
-            id="dividendos"
-            value={params.dividendos}
-            onChange={(v) => set('dividendos', v)}
+            id="annualDividendYield"
+            value={params.annualDividendYield}
+            onChange={(v) => set('annualDividendYield', v)}
             min={0}
             max={15}
             step={0.1}
@@ -304,9 +304,9 @@ export default function Calculator() {
 
           <SliderField
             label="Crecimiento Anual de Dividendos"
-            id="crecimientoDividendos"
-            value={params.crecimientoDividendos}
-            onChange={(v) => set('crecimientoDividendos', v)}
+            id="dividendGrowthRate"
+            value={params.dividendGrowthRate}
+            onChange={(v) => set('dividendGrowthRate', v)}
             min={0}
             max={10}
             step={0.1}
@@ -320,9 +320,9 @@ export default function Calculator() {
 
           <SliderField
             label="Años de Inversión"
-            id="anos"
-            value={params.anos}
-            onChange={(v) => set('anos', v)}
+            id="years"
+            value={params.years}
+            onChange={(v) => set('years', v)}
             min={5}
             max={30}
             step={1}
@@ -340,14 +340,14 @@ export default function Calculator() {
               <input
                 type="checkbox"
                 className="sr-only"
-                checked={params.reinvertir}
-                onChange={(e) => set('reinvertir', e.target.checked)}
+                checked={params.reinvest}
+                onChange={(e) => set('reinvest', e.target.checked)}
               />
               <div
-                className={`w-10 h-5 rounded-full transition-colors duration-200 ${params.reinvertir ? 'bg-gold/20' : 'bg-border'}`}
+                className={`w-10 h-5 rounded-full transition-colors duration-200 ${params.reinvest ? 'bg-gold/20' : 'bg-border'}`}
               />
               <div
-                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-all duration-200 ${params.reinvertir ? 'translate-x-5 bg-gold' : 'bg-muted'}`}
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-all duration-200 ${params.reinvest ? 'translate-x-5 bg-gold' : 'bg-muted'}`}
               />
             </div>
           </label>
@@ -359,7 +359,7 @@ export default function Calculator() {
 
           <div className="mb-5">
             <label
-              htmlFor="metaIngreso"
+              htmlFor="yearGoal"
               className="block text-[10px] tracking-[0.2em] uppercase text-muted mb-2"
             >
               Meta Anual
@@ -369,12 +369,37 @@ export default function Calculator() {
                 $
               </span>
               <input
-                id="metaIngreso"
+                id="yearGoal"
                 type="number"
-                value={params.metaIngreso}
+                value={params.yearGoal}
                 min={0}
                 step={100}
-                onChange={(e) => set('metaIngreso', Number(e.target.value))}
+                onChange={(e) => set('yearGoal', Number(e.target.value))}
+                className="w-full bg-surface2 border border-border rounded-sm py-3 pl-8 pr-3 text-ink font-mono text-sm outline-none focus:border-gold transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <label
+              htmlFor="monthlyGoal"
+              className="block text-[10px] tracking-[0.2em] uppercase text-muted mb-2"
+            >
+              Meta Mensual (aprox.)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gold text-sm pointer-events-none">
+                $
+              </span>
+              <input
+                id="monthlyGoal"
+                type="number"
+                value={(params.yearGoal / 12).toFixed(0)}
+                min={0}
+                step={100}
+                onChange={(e) =>
+                  set('yearGoal', Number(e.target.value) * 12)
+                }
                 className="w-full bg-surface2 border border-border rounded-sm py-3 pl-8 pr-3 text-ink font-mono text-sm outline-none focus:border-gold transition-colors"
               />
             </div>
@@ -382,9 +407,9 @@ export default function Calculator() {
 
           <SliderField
             label="Inflación Anual"
-            id="inflacion"
-            value={params.inflacion}
-            onChange={(v) => set('inflacion', v)}
+            id="inflation"
+            value={params.inflation}
+            onChange={(v) => set('inflation', v)}
             min={2}
             max={5}
             step={0.1}
@@ -402,7 +427,7 @@ export default function Calculator() {
             <StatCard
               label="Valor Final"
               value={fmtFull(valorFinal)}
-              sub={`al año ${params.anos}`}
+              sub={`al año ${params.years}`}
               accent="gold"
             />
             <StatCard
@@ -419,22 +444,22 @@ export default function Calculator() {
             />
             <StatCard
               label={
-                params.reinvertir
+                params.reinvest
                   ? 'Dividendos Reinvertidos'
                   : 'Dividendos Cobrados'
               }
               value={fmtFull(divTotales)}
               sub={
-                params.reinvertir
+                params.reinvest
                   ? 'acumulados al capital'
                   : 'recibidos en efectivo'
               }
-              accent={params.reinvertir ? 'emerald' : 'default'}
+              accent={params.reinvest ? 'emerald' : 'default'}
             />
             <StatCard
               label="Meta Ingreso Pasivo"
-              value={fmtFull(metaIngresoFinal)}
-              sub={`inflación ${params.inflacion}%`}
+              value={fmtFull(yearGoalFinal)}
+              sub={`inflación ${params.inflation}%`}
               accent="default"
             />
             <StatCard
@@ -552,7 +577,7 @@ export default function Calculator() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="metaIngresoAnual"
+                  dataKey="yearGoalAnual"
                   name="Meta Ingreso Anual"
                   stroke="#e5c76b"
                   strokeWidth={2}
@@ -616,7 +641,7 @@ export default function Calculator() {
                         {fmtFull(row.divAno || 0)}
                       </td>
                       <td className="px-4 py-2.5 text-right text-gold">
-                        {fmtFull(row.metaIngresoAnual)}
+                        {fmtFull(row.yearGoalAnual)}
                       </td>
                       <td className="px-4 py-2.5 text-right text-muted">
                         {row.coberturaMetaPct.toFixed(1)}%
