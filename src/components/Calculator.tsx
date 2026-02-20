@@ -21,6 +21,7 @@ interface Params {
   mensual: number;
   tasa: number;
   dividendos: number;
+  crecimientoDividendos: number;
   anos: number;
   reinvertir: boolean;
   metaIngreso: number;
@@ -44,6 +45,7 @@ interface YearRow {
 function calculate(p: Params): YearRow[] {
   const tasaMensual = p.tasa / 100 / 12;
   const divMensual = p.dividendos / 100 / 12;
+  const crecimientoDiv = p.crecimientoDividendos / 100;
 
   const rows: YearRow[] = [];
 
@@ -60,7 +62,12 @@ function calculate(p: Params): YearRow[] {
     coberturaMetaPct: 0,
   });
 
-  let valor = p.inicial;
+  type Cohort = {
+    balance: number;
+    ageMonths: number;
+  };
+
+  let cohorts: Cohort[] = [{ balance: p.inicial, ageMonths: 0 }];
   let totalIntereses = 0;
   let totalDividendos = 0;
 
@@ -69,19 +76,29 @@ function calculate(p: Params): YearRow[] {
     let divAno = 0;
 
     for (let m = 0; m < 12; m++) {
-      valor += p.mensual;
+      if (p.mensual > 0) {
+        cohorts.push({ balance: p.mensual, ageMonths: 0 });
+      }
 
-      const interes = valor * tasaMensual;
-      valor += interes;
-      interesAno += interes;
+      for (const cohort of cohorts) {
+        const interes = cohort.balance * tasaMensual;
+        cohort.balance += interes;
+        interesAno += interes;
 
-      const div = valor * divMensual;
-      divAno += div;
+        const ageYears = cohort.ageMonths / 12;
+        const divRate = divMensual * (1 + crecimientoDiv * ageYears);
+        const div = cohort.balance * divRate;
+        divAno += div;
 
-      if (p.reinvertir) {
-        valor += div;
+        if (p.reinvertir) {
+          cohort.balance += div;
+        }
+
+        cohort.ageMonths += 1;
       }
     }
+
+    const valor = cohorts.reduce((sum, cohort) => sum + cohort.balance, 0);
 
     totalIntereses += interesAno;
     totalDividendos += divAno;
@@ -122,6 +139,7 @@ export default function Calculator() {
     mensual: 500,
     tasa: 8,
     dividendos: 3,
+    crecimientoDividendos: 5,
     anos: 20,
     reinvertir: true,
     metaIngreso: 6000,
@@ -243,6 +261,17 @@ export default function Calculator() {
             onChange={(v) => set('dividendos', v)}
             min={0}
             max={15}
+            step={0.1}
+            suffix="%"
+          />
+
+          <SliderField
+            label="Crecimiento Anual de Dividendos"
+            id="crecimientoDividendos"
+            value={params.crecimientoDividendos}
+            onChange={(v) => set('crecimientoDividendos', v)}
+            min={0}
+            max={10}
             step={0.1}
             suffix="%"
           />
