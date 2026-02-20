@@ -142,7 +142,7 @@ export default function Calculator() {
     crecimientoDividendos: 5,
     anos: 20,
     reinvertir: true,
-    metaIngreso: 6000,
+    metaIngreso: 15_000,
     inflacion: 3,
   });
 
