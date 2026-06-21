@@ -107,11 +107,7 @@ function calculate(p: Params): YearRow[] {
     const valorTotal = p.reinvest ? valor : valor + totalDividendos * 0; // dividends cashed out
     const ganancia = valorTotal - capitalAportado;
     const roiPct = capitalAportado > 0 ? (ganancia / capitalAportado) * 100 : 0;
-    const yearGoalAnual = passiveIncomeGoalForYear(
-      p.yearGoal,
-      p.inflation,
-      y,
-    );
+    const yearGoalAnual = passiveIncomeGoalForYear(p.yearGoal, p.inflation, y);
     const coberturaMetaPct =
       yearGoalAnual > 0 ? (divAno / yearGoalAnual) * 100 : 0;
 
@@ -397,9 +393,7 @@ export default function Calculator() {
                 value={(params.yearGoal / 12).toFixed(0)}
                 min={0}
                 step={100}
-                onChange={(e) =>
-                  set('yearGoal', Number(e.target.value) * 12)
-                }
+                onChange={(e) => set('yearGoal', Number(e.target.value) * 12)}
                 className="w-full bg-surface2 border border-border rounded-sm py-3 pl-8 pr-3 text-ink font-mono text-sm outline-none focus:border-gold transition-colors"
               />
             </div>
@@ -612,22 +606,43 @@ export default function Calculator() {
             </div>
             <div className="overflow-auto max-h-72">
               <table className="w-full text-xs">
-                <thead>
+                <thead className="bg-surface2">
+                  <tr>
+                    <th></th>
+                    <th
+                      className="px-4 py-2 text-xs text-muted border-b  border-r border-border"
+                      colSpan={4}
+                    >
+                      Capital
+                    </th>
+                    <th
+                      className="px-4 py-2 text-xs text-muted border-b  border-r border-border"
+                      colSpan={2}
+                    >
+                      Dividendos
+                    </th>
+                    <th
+                      className="px-4 py-2 text-xs text-muted border-b  border-border"
+                      colSpan={2}
+                    >
+                      Meta
+                    </th>
+                  </tr>
                   <tr>
                     {[
                       'Año',
-                      'Capital Aportado',
-                      'Intereses Acum.',
-                      'Dividendos Acum.',
-                      'Dividendos Año',
-                      'Meta Ingreso',
-                      'Cobertura Meta',
+                      'Aportado',
+                      'Intereses',
                       'Valor Total',
                       'ROI',
+                      'Acumulados',
+                      'Periodo',
+                      'Ingreso',
+                      'Cobertura',
                     ].map((h, i) => (
                       <th
                         key={h}
-                        className={`sticky top-0 bg-surface2 px-4 py-2.5 text-[10px] tracking-[0.15em] uppercase text-muted whitespace-nowrap font-normal border-b border-border ${i === 0 ? 'text-left' : 'text-right'}`}
+                        className={`sticky bg-surface2 top-0 px-4 py-2.5 text-[10px] tracking-[0.15em] uppercase text-muted whitespace-nowrap font-normal border-b border-border ${i === 0 ? 'text-left' : 'text-right'}`}
                       >
                         {h}
                       </th>
@@ -649,6 +664,14 @@ export default function Calculator() {
                       <td className="px-4 py-2.5 text-right text-emerald">
                         {fmtFull(row.interesesAcum)}
                       </td>
+                      <td className="px-4 py-2.5 text-right text-gold font-medium">
+                        {fmtFull(row.valorTotal)}
+                      </td>
+                      <td
+                        className={`px-4 py-2.5 text-right ${row.roiPct >= 0 ? 'text-emerald' : 'text-danger'}`}
+                      >
+                        {row.roiPct.toFixed(1)}%
+                      </td>
                       <td className="px-4 py-2.5 text-right text-emerald">
                         {fmtFull(row.dividendosAcum)}
                       </td>
@@ -660,14 +683,6 @@ export default function Calculator() {
                       </td>
                       <td className="px-4 py-2.5 text-right text-muted">
                         {row.coberturaMetaPct.toFixed(1)}%
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-gold font-medium">
-                        {fmtFull(row.valorTotal)}
-                      </td>
-                      <td
-                        className={`px-4 py-2.5 text-right ${row.roiPct >= 0 ? 'text-emerald' : 'text-danger'}`}
-                      >
-                        {row.roiPct.toFixed(1)}%
                       </td>
                     </tr>
                   ))}
